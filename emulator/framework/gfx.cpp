@@ -51,8 +51,8 @@ void GFXOpenWindow(const char *title,int width,int height,int colour) {
 	}
 
 	beeper.setup();
-	mainWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, 					// Try to create a window
-							SDL_WINDOWPOS_UNDEFINED, width,height, SDL_WINDOW_SHOWN );
+	mainWindow = SDL_CreateWindow(title, width,height, 0);							// Try to create a window
+
 	if (mainWindow == NULL) {
 		exit(printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() ));
 	}
@@ -82,30 +82,30 @@ void GFXStart(int autoStart) {
 			_GFXMainLoop(NULL);
 	}
 	#endif
-	SDL_CloseAudio();
+	SDL_CloseAudioDevice(1);
 }
 
 
 static void _GFXMainLoop(void *arg) {
 	SDL_Event event;
-	while (SDL_PollEvent(&event)) {													// While events in event queue.
-		if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {		// Exit if ESC pressed.
-			if ((SDL_GetModState() & KMOD_LCTRL) == 0) isRunning = 0;				// Not Ctrl+ESC
+	while (SDL_PollEvent(&event)) {														// While events in event queue.
+		if (event.type == SDL_EVENT_KEY_DOWN && event.key.keysym.sym == SDLK_ESCAPE) {	// Exit if ESC pressed.
+			if ((SDL_GetModState() & SDL_KMOD_LCTRL) == 0) isRunning = 0;				// Not Ctrl+ESC
 		}
-		if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {					// Handle other keys.
-			_GFXUpdateKeyRecord(event.key.keysym.sym,event.type == SDL_KEYDOWN);
+		if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) {		// Handle other keys.
+			_GFXUpdateKeyRecord(event.key.keysym.sym,event.type == SDL_EVENT_KEY_DOWN);
 			for (int kc = 0;kc < 256;kc++) {
 				if (sdlKeySymbolList[kc] == event.key.keysym.sym) {
 					if (kc != 0x6B && kc != 0x72 && kc != 0x74 && kc != 0x75) {
-						if (kc >= 0x80) HWQueueKeyboardEvent(0xE0);					// Shift
-						if (event.type == SDL_KEYUP) HWQueueKeyboardEvent(0xF0);	// Release
-						HWQueueKeyboardEvent(kc & 0x7F);							// Scan code.
+						if (kc >= 0x80) HWQueueKeyboardEvent(0xE0);						// Shift
+						if (event.type == SDL_EVENT_KEY_UP) HWQueueKeyboardEvent(0xF0);	// Release
+						HWQueueKeyboardEvent(kc & 0x7F);								// Scan code.
 					}
 				}
 			}
 		}
 	}
-	SDL_FillRect(mainSurface, NULL, 												// Draw the background.
+	SDL_FillSurfaceRect(mainSurface, NULL, 											// Draw the background.
 						SDL_MapRGB(mainSurface->format, RED(background),GREEN(background),BLUE(background)));
 	int render = GFXXRender(mainSurface,-1);										// Ask app to render state.
 	if (render) SDL_UpdateWindowSurface(mainWindow);								// And update the main window.
@@ -148,7 +148,7 @@ void GFXCloseWindow(void) {
 // *******************************************************************************************************************************
 
 void GFXRectangle(SDL_Rect *rc,int colour) {
-	SDL_FillRect(mainSurface,rc,SDL_MapRGB(mainSurface->format,RED(colour),GREEN(colour),BLUE(colour)));
+	SDL_FillSurfaceRect(mainSurface,rc,SDL_MapRGB(mainSurface->format,RED(colour),GREEN(colour),BLUE(colour)));
 }
 
 // *******************************************************************************************************************************
@@ -166,7 +166,7 @@ void GFXCharacter(int xc,int yc,int character,int size,int colour,int back) {
 	if (back >= 0) {
 		Uint32 col2 = SDL_MapRGB(mainSurface->format,RED(back),GREEN(back),BLUE(back));				
 		rc.x = xc-size/2;rc.y = yc-size/2;rc.w = 6 * size;rc.h = 8*size;
-		SDL_FillRect(mainSurface,&rc,col2);
+		SDL_FillSurfaceRect(mainSurface,&rc,col2);
 	}
 	if (character < 32 || character >= 128) character = '?';						// Unknown character
 	character = character - 32;														// First font item is $20 (Space)
@@ -176,7 +176,7 @@ void GFXCharacter(int xc,int yc,int character,int size,int colour,int back) {
 		for (int y = 0;y < 7;y++) {													// 7 Down
 			rc.y = yc + y * size;
 			if (fontdata[character*5+x] & (0x01 << y)) {							// Is bit set ? (note inversion)
-				SDL_FillRect(mainSurface,&rc,col);									// If so, draw the pixel
+				SDL_FillSurfaceRect(mainSurface,&rc,col);							// If so, draw the pixel
 			}
 		}
 	}
@@ -404,7 +404,7 @@ void Beeper::setup(void) {
     SDL_AudioSpec desiredSpec;
     SDL_zero(desiredSpec);
     desiredSpec.freq = FREQUENCY;
-    desiredSpec.format = AUDIO_S16LSB;
+    desiredSpec.format = SDL_AUDIO_S16LSB;
     desiredSpec.channels = 1;
     desiredSpec.samples = 512;
     desiredSpec.callback = audio_callback;
@@ -416,7 +416,7 @@ void Beeper::setup(void) {
     	printf("Couldn't open audio %s\n",SDL_GetError());
     if (desiredSpec.format != obtainedSpec.format) 
     	printf("Wrong format. %x %x\n",desiredSpec.format,obtainedSpec.format);
-    SDL_PauseAudioDevice(dev,0);
+    SDL_PauseAudioDevice(dev);
  	noise = freq1 = freq2 = freq3 = 0;
 }
 

@@ -1,0 +1,5 @@
+// WARNING: This is a GENERATED FILE if the name is config.h
+// Source file: config.h.in
+#define APP_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define APP_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define APP_VERSION_PATCH @PROJECT_VERSION_PATCH@
